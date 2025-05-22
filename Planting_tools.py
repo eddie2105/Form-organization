@@ -75,7 +75,19 @@ if main_file:
         st.session_state.refresh = False
 
 # —— 處理植栽規格表
-if plant_file:
+if plant_file is not None and hasattr(plant_file, "name") and plant_file.name:
+    if not plant_file.name.isascii():
+        st.error("❌ 檔名請使用英文，避免中文或特殊符號")
+        st.stop()
+
+    try:
+        xls_plant = pd.ExcelFile(plant_file)
+        # ↓ 以下照你原來的流程
+    except Exception as e:
+        st.error(f"❌ 植栽表讀取錯誤：{e}")
+        st.stop()
+else:
+    st.warning("⚠️ 請上傳有效的植栽表 Excel 檔案（英文檔名）")
     try:
         xls_plant = pd.ExcelFile(plant_file)
         sheet_plant = st.selectbox("請選擇植栽表工作表：", xls_plant.sheet_names)

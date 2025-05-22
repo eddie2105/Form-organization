@@ -1,6 +1,5 @@
 {
   "name": "Python 3",
-  // Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
   "image": "mcr.microsoft.com/devcontainers/python:1-3.11-bullseye",
   "customizations": {
     "codespaces": {
@@ -10,24 +9,26 @@
       ]
     },
     "vscode": {
-      "settings": {},
+      "settings": {
+        "python.logging.level": "DEBUG"
+      },
       "extensions": [
         "ms-python.python",
         "ms-python.vscode-pylance"
       ]
     }
   },
-  "updateContentCommand": "[ -f packages.txt ] && sudo apt update && sudo apt upgrade -y && sudo xargs apt install -y <packages.txt; [ -f requirements.txt ] && pip3 install --user -r requirements.txt; pip3 install --user streamlit; echo '✅ Packages installed and Requirements met'",
-  "postAttachCommand": {
-    "server": "streamlit run everybody.py --server.enableCORS false --server.enableXsrfProtection false"
-  },
+  "updateContentCommand": "if [ -f packages.txt ]; then sudo apt update && sudo apt upgrade -y && xargs -a packages.txt sudo apt install -y; fi && if [ -f requirements.txt ]; then pip install -r requirements.txt; fi && pip install streamlit xlrd==1.2.0 openpyxl && echo '✅ 所有依賴安裝完成'",
+  "postAttachCommand": "streamlit run everybody.py --server.enableCORS false --server.enableXsrfProtection false",
+  "forwardPorts": [8501, 8502],
   "portsAttributes": {
     "8501": {
-      "label": "Application",
+      "label": "主應用",
       "onAutoForward": "openPreview"
+    },
+    "8502": {
+      "label": "測試版",
+      "onAutoForward": "openBrowser"
     }
-  },
-  "forwardPorts": [
-    8501
-  ]
+  }
 }

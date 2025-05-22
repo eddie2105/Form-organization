@@ -1,5 +1,4 @@
 streamlit
 pandas
 openpyxl
-xlrd
 xlrd==1.2.0 

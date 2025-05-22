@@ -8,12 +8,21 @@ st.title("📊 通用版單價分析查詢工具")
 # —— 安全讀 Excel 檔案的函式（自動判斷 .xls / .xlsx） ——
 def read_excel_safely(file, sheet_name=None, skiprows=0):
     ext = os.path.splitext(file.name)[1].lower()
-    if ext == ".xls":
-        return pd.read_excel(file, sheet_name=sheet_name, skiprows=skiprows, engine="xlrd")
-    elif ext == ".xlsx":
-        return pd.read_excel(file, sheet_name=sheet_name, skiprows=skiprows, engine="openpyxl")
-    else:
-        raise ValueError("❌ 不支援的檔案格式，只接受 .xls 或 .xlsx")
+    st.write(f"📂 嘗試讀取檔案：{file.name} (副檔名：{ext})")
+    if ext != ".xlsx":
+        raise ValueError("❌ 目前僅支援 .xlsx 格式，請另存為新版 Excel 格式")
+
+    try:
+        df = pd.read_excel(file, sheet_name=sheet_name, skiprows=skiprows, engine="openpyxl")
+    except Exception as e:
+        raise ValueError(f"❌ Excel 讀取失敗：{e}")
+
+    if df.empty:
+        raise ValueError("⚠️ 檔案內容為空，請檢查資料列與標題欄位")
+
+    st.success("✅ Excel 檔案讀取成功")
+    return df
+
 
 
 # —— 上傳兩份 Excel：單價分析 & 植栽規格

@@ -1,8 +1,20 @@
 import streamlit as st
 import pandas as pd
 import re
+import os
 
 st.title("📊 通用版單價分析查詢工具")
+
+# —— 安全讀 Excel 檔案的函式（自動判斷 .xls / .xlsx） ——
+def read_excel_safely(file, sheet_name=None, skiprows=0):
+    ext = os.path.splitext(file.name)[1].lower()
+    if ext == ".xls":
+        return pd.read_excel(file, sheet_name=sheet_name, skiprows=skiprows, engine="xlrd")
+    elif ext == ".xlsx":
+        return pd.read_excel(file, sheet_name=sheet_name, skiprows=skiprows, engine="openpyxl")
+    else:
+        raise ValueError("❌ 不支援的檔案格式，只接受 .xls 或 .xlsx")
+
 
 # —— 上傳兩份 Excel：單價分析 & 植栽規格
 main_file = st.file_uploader(
@@ -21,13 +33,19 @@ if main_file:
         st.session_state.refresh = False
 
     # 讀取主表
-    xls_main = pd.ExcelFile(main_file)
-    sheet_main = st.selectbox("請選擇單價分析工作表：", xls_main.sheet_names)
-    skip_main = st.number_input("跳過主表前幾列？", min_value=0, value=6)
-    df_main = pd.read_excel(xls_main, sheet_name=sheet_main, skiprows=skip_main)
-    df_main.columns = df_main.columns.str.strip()
-    st.write("📋 主表欄位：", list(df_main.columns))
-    st.dataframe(df_main.head())
+    try:
+        xls_main = pd.ExcelFile(main_file)
+        sheet_main = st.selectbox("請選擇單價分析工作表：", xls_main.sheet_names)
+        skip_main = st.number_input("跳過主表前幾列？", min_value=0, value=6)
+
+        df_main = read_excel_safely(main_file, sheet_name=sheet_main, skiprows=skip_main)
+        df_main.columns = df_main.columns.str.strip()
+        st.write("📋 主表欄位：", list(df_main.columns))
+        st.dataframe(df_main.head())
+
+    except Exception as e:
+        st.error(f"❌ 主表讀取失敗：{e}")
+        st.stop()
 
     # 對應主表必要欄位
     st.markdown("---")
@@ -55,10 +73,14 @@ if plant_file:
     xls_plant = pd.ExcelFile(plant_file)
     sheet_plant = st.selectbox("請選擇植栽表工作表：", xls_plant.sheet_names)
     skip_plant = st.number_input("跳過植栽表前幾列？", min_value=0, value=0)
-    df_plant = pd.read_excel(xls_plant, sheet_name=sheet_plant, skiprows=skip_plant)
-    df_plant.columns = df_plant.columns.str.strip()
-    st.write("📋 植栽表欄位：", list(df_plant.columns))
-    st.dataframe(df_plant.head())
+    try:
+        df_plant = read_excel_safely(plant_file, sheet_name=sheet_plant, skiprows=skip_plant)
+        df_plant.columns = df_plant.columns.str.strip()
+        st.write("📋 植栽表欄位：", list(df_plant.columns))
+        st.dataframe(df_plant.head())
+    except Exception as e:
+        st.error(f"❌ 植栽表讀取失敗：{e}")
+        st.stop()
 
     # 對應植栽表必要欄位
     st.markdown("---")

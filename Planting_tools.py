@@ -76,53 +76,46 @@ if main_file:
 
 # —— 處理植栽規格表
 if plant_file:
-    # 讀取植栽表
-    sheet_plant = st.selectbox("請選擇植栽表工作表：", xls_plant.sheet_names)
-    skip_plant = st.number_input("跳過植栽表前幾列？", min_value=0, value=0)
     try:
+        xls_plant = pd.ExcelFile(plant_file)
+        sheet_plant = st.selectbox("請選擇植栽表工作表：", xls_plant.sheet_names)
+        skip_plant = st.number_input("跳過植栽表前幾列？", min_value=0, value=0)
+
         df_plant = read_excel_safely(plant_file, sheet_name=sheet_plant, skiprows=skip_plant)
         df_plant.columns = df_plant.columns.str.strip()
-        st.write("📋 植栽表欄位：", list(df_plant.columns))
         st.dataframe(df_plant.head())
+
+        # 對應欄位
+        st.markdown("---")
+        st.subheader("📌 對應植栽表欄位")
+        p_col_group = st.selectbox("🔢 群組欄：", df_plant.columns, key="p_col_group")
+        p_col_spec = st.selectbox("🔖 規格說明欄：", df_plant.columns, key="p_col_spec")
+        p_col_name = st.selectbox("🔖 品種欄：", df_plant.columns, key="p_col_name")
+
+        df_plant_clean = (
+            df_plant.rename(columns={
+                p_col_group: "group",
+                p_col_spec: "說明",
+                p_col_name: "品種"
+            }).dropna(subset=["group", "說明", "品種"])
+        )
+        df_plant_clean["group"] = df_plant_clean["group"].astype(int)
+        df_plant_clean["說明"] = df_plant_clean["說明"].astype(str)
+        df_plant_clean["品種"] = df_plant_clean["品種"].astype(str)
+
     except Exception as e:
-        st.error(f"❌ 植栽表讀取失敗：{e}")
+        st.error(f"❌ 植栽表讀取錯誤：{e}")
         st.stop()
 
-    # 對應植栽表必要欄位
-    st.markdown("---")
-    st.subheader("📌 對應植栽表欄位")
-    p_col_group = st.selectbox("🔢 群組欄：", df_plant.columns, key="p_col_group")
-    p_col_spec = st.selectbox("🔖 規格說明欄：", df_plant.columns, key="p_col_spec")
-    p_col_name = st.selectbox("🔖 品種欄：", df_plant.columns, key="p_col_name")
-
-    df_plant_clean = (
-        df_plant.rename(columns={
-            p_col_group: "group",
-            p_col_spec: "說明",
-            p_col_name: "品種"
-        })
-        .dropna(subset=["group", "說明", "品種"] )
-    )
-    # 欄位型態
-    df_plant_clean["group"] = df_plant_clean["group"].astype(int)
-    df_plant_clean["說明"] = df_plant_clean["說明"].astype(str)
-    df_plant_clean["品種"] = df_plant_clean["品種"].astype(str)
-
-    # 搜尋及勾選植栽
+    # 搜尋與勾選植栽（不建議包在 try 裡，因為 df_plant_clean 已有保障）
     st.subheader("🌸 植栽規格查詢")
     kw_plant = st.text_input("🔍 搜尋植栽關鍵字（可多個，用 , 、 或 ， 分隔）：", key="kw_plant")
 
-    # 1️⃣ 拆出所有關鍵字
     keywords = [k.strip() for k in re.split(r"[,，、]", kw_plant) if k.strip()]
-
-    # 2️⃣ 只有有輸入才篩，多關鍵字以 or 方式組成正則
     if keywords:
         pattern = "|".join(map(re.escape, keywords))
-        df_pla_filt = df_plant_clean[
-            df_plant_clean["品種"].str.contains(pattern, na=False)
-        ]
+        df_pla_filt = df_plant_clean[df_plant_clean["品種"].str.contains(pattern, na=False)]
     else:
-        # 空白時只顯示前 5 筆
         df_pla_filt = df_plant_clean.head(5)
 
     df_pla_filt = df_pla_filt.sort_values("group").reset_index(drop=True)
@@ -140,6 +133,7 @@ if plant_file:
             }
         else:
             st.session_state.selected_items.pop(cb, None)
+
 
 # —— 工項關鍵字查詢及彙整 ——
 if "df_ready" in st.session_state and st.session_state.df_ready is not None:

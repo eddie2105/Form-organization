@@ -70,7 +70,6 @@ if main_file:
 # —— 處理植栽規格表
 if plant_file:
     # 讀取植栽表
-    xls_plant = pd.ExcelFile(plant_file)
     sheet_plant = st.selectbox("請選擇植栽表工作表：", xls_plant.sheet_names)
     skip_plant = st.number_input("跳過植栽表前幾列？", min_value=0, value=0)
     try:

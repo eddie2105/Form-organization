@@ -82,14 +82,6 @@ if plant_file is not None and hasattr(plant_file, "name") and plant_file.name:
 
     try:
         xls_plant = pd.ExcelFile(plant_file)
-        # ↓ 以下照你原來的流程
-    except Exception as e:
-        st.error(f"❌ 植栽表讀取錯誤：{e}")
-        st.stop()
-else:
-    st.warning("⚠️ 請上傳有效的植栽表 Excel 檔案（英文檔名）")
-    try:
-        xls_plant = pd.ExcelFile(plant_file)
         sheet_plant = st.selectbox("請選擇植栽表工作表：", xls_plant.sheet_names)
         skip_plant = st.number_input("跳過植栽表前幾列？", min_value=0, value=0)
 
@@ -115,36 +107,40 @@ else:
         df_plant_clean["說明"] = df_plant_clean["說明"].astype(str)
         df_plant_clean["品種"] = df_plant_clean["品種"].astype(str)
 
+        # 搜尋與勾選植栽
+        st.subheader("🌸 植栽規格查詢")
+        kw_plant = st.text_input("🔍 搜尋植栽關鍵字（可多個，用 , 、 或 ， 分隔）：", key="kw_plant")
+
+        keywords = [k.strip() for k in re.split(r"[,，、]", kw_plant) if k.strip()]
+        if keywords:
+            pattern = "|".join(map(re.escape, keywords))
+            df_pla_filt = df_plant_clean[df_plant_clean["品種"].str.contains(pattern, na=False)]
+        else:
+            df_pla_filt = df_plant_clean.head(5)
+
+        df_pla_filt = df_pla_filt.sort_values("group").reset_index(drop=True)
+
+        for _, row in df_pla_filt.iterrows():
+            label = f"{row['group']}｜{row['品種']}，{row['說明']}"
+            cb = f"plant_{row['group']}_{row['品種']}"
+            checked = cb in st.session_state.selected_items
+            if st.checkbox(label, key=cb, value=checked):
+                st.session_state.selected_items[cb] = {
+                    "項次": str(row["group"]),
+                    "項目及說明": f"{row['品種']}，{row['說明']}",
+                    "單位": "株",
+                    "項次數值": float(row["group"])
+                }
+            else:
+                st.session_state.selected_items.pop(cb, None)
+
     except Exception as e:
         st.error(f"❌ 植栽表讀取錯誤：{e}")
         st.stop()
 
-    # 搜尋與勾選植栽（不建議包在 try 裡，因為 df_plant_clean 已有保障）
-    st.subheader("🌸 植栽規格查詢")
-    kw_plant = st.text_input("🔍 搜尋植栽關鍵字（可多個，用 , 、 或 ， 分隔）：", key="kw_plant")
+else:
+    st.info("請上傳植栽 Excel 檔案（建議英文檔名）")
 
-    keywords = [k.strip() for k in re.split(r"[,，、]", kw_plant) if k.strip()]
-    if keywords:
-        pattern = "|".join(map(re.escape, keywords))
-        df_pla_filt = df_plant_clean[df_plant_clean["品種"].str.contains(pattern, na=False)]
-    else:
-        df_pla_filt = df_plant_clean.head(5)
-
-    df_pla_filt = df_pla_filt.sort_values("group").reset_index(drop=True)
-
-    for _, row in df_pla_filt.iterrows():
-        label = f"{row['group']}｜{row['品種']}，{row['說明']}"
-        cb = f"plant_{row['group']}_{row['品種']}"
-        checked = cb in st.session_state.selected_items
-        if st.checkbox(label, key=cb, value=checked):
-            st.session_state.selected_items[cb] = {
-                "項次": str(row["group"]),
-                "項目及說明": f"{row['品種']}，{row['說明']}",
-                "單位": "株",
-                "項次數值": float(row["group"])
-            }
-        else:
-            st.session_state.selected_items.pop(cb, None)
 
 
 # —— 工項關鍵字查詢及彙整 ——

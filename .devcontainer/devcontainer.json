@@ -5,7 +5,7 @@
     "codespaces": {
       "openFiles": [
         "README.md",
-        "everybody.py"
+        "Planting_tools.py"
       ]
     },
     "vscode": {
@@ -19,7 +19,7 @@
     }
   },
   "updateContentCommand": "if [ -f packages.txt ]; then sudo apt update && sudo apt upgrade -y && xargs -a packages.txt sudo apt install -y; fi && if [ -f requirements.txt ]; then pip install -r requirements.txt; fi && pip install streamlit xlrd==1.2.0 openpyxl && echo '✅ 所有依賴安裝完成'",
-  "postAttachCommand": "streamlit run everybody.py --server.enableCORS false --server.enableXsrfProtection false",
+  "postAttachCommand": "streamlit run Planting_tools.py --server.enableCORS false --server.enableXsrfProtection false",
   "forwardPorts": [8501, 8502],
   "portsAttributes": {
     "8501": {
